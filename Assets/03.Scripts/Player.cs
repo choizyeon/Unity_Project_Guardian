@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/* Game Scene 에서 사용되는 Player */
 public class Player : MonoBehaviour
 {
-
     public enum PlayerState
     {
         idle,
@@ -29,10 +27,9 @@ public class Player : MonoBehaviour
 
     public PlayerState state { get { return m_playerState; } set { m_playerState = value; } }
     public int hp { get { return m_hp; } set { m_hp = value; } }
- 
+
     void Start()
     {
-        //m_hp = GameManager.Instance.fullHP;
         m_hp = PlayerPrefs.GetInt("FullHP");
         m_playerState = PlayerState.idle;
         m_playerAnimator = this.GetComponent<Animator>();
@@ -45,7 +42,7 @@ public class Player : MonoBehaviour
     {
         if (GameManager.Instance.gameState == GameManager.GameState.pause) return;
 
-            PlayerMove();
+        PlayerMove();
 
         if (GameManager.Instance.gameState == GameManager.GameState.playing && m_playerState == PlayerState.idle)
             ChangeState(PlayerState.move);
@@ -55,18 +52,17 @@ public class Player : MonoBehaviour
 
     void PlayerMove()
     {
-     
-       if (Input.GetKeyDown("up"))
-       {
-           PlayerUp();
-       }
+        if (Input.GetKeyDown("up"))
+        {
+            PlayerUp();
+        }
 
-       if (Input.GetKeyDown("down"))
-       {
-           PlayerDown();
-       }
+        if (Input.GetKeyDown("down"))
+        {
+            PlayerDown();
+        }
 
-        this.transform.position 
+        this.transform.position
             = Vector3.Lerp(this.transform.position, m_playerPosIdx[m_playerPos], m_speed);
     }
 
@@ -86,8 +82,8 @@ public class Player : MonoBehaviour
                     break;
             }
         }
-        
     }
+
     public void PlayerDown()
     {
         if (m_playerState == PlayerState.move || m_playerState == PlayerState.hit)
@@ -106,47 +102,62 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void ChangeState(PlayerState state)
+    public void ChangeState(PlayerState newState)
     {
-        if (m_playerState == state) return;
-        m_playerState = state;
+        if (m_playerState == newState) return;
 
-        switch (state)
+        m_playerState = newState;
+
+        switch (newState)
         {
             case PlayerState.idle:
-                m_playerAnimator.SetInteger("state", 0);
+                EnterIdleState();
                 break;
-
             case PlayerState.move:
-                m_playerState = PlayerState.move;
-                m_playerAnimator.SetInteger("state", 1);
+                EnterMoveState();
                 break;
-
             case PlayerState.hit:
-                m_playerState = PlayerState.hit;
-                m_playerAnimator.SetInteger("state", 2);
-                if (m_coroutine == null)
-                    StartCoroutine(PlayerHit());
+                EnterHitState();
                 break;
-
             case PlayerState.die:
-                m_playerState = PlayerState.die;
-                m_playerAnimator.SetInteger("state", 3);
-                GameManager.Instance.gameState = GameManager.GameState.gameOver;
+                EnterDieState();
                 break;
         }
     }
 
+    private void EnterIdleState()
+    {
+        m_playerAnimator.SetInteger("state", 0);
+    }
+
+    private void EnterMoveState()
+    {
+        m_playerAnimator.SetInteger("state", 1);
+    }
+
+    private void EnterHitState()
+    {
+        m_playerAnimator.SetInteger("state", 2);
+        if (m_coroutine == null)
+            m_coroutine = StartCoroutine(PlayerHit());
+    }
+
+    private void EnterDieState()
+    {
+        m_playerAnimator.SetInteger("state", 3);
+        GameManager.Instance.gameState = GameManager.GameState.gameOver;
+    }
+
     private IEnumerator PlayerHit()
     {
-        if(m_hp <= 0)
+        if (m_hp <= 0)
         {
             m_coroutine = null;
-            yield return null;
+            yield break;
         }
 
         var wfs = new WaitForSeconds(0.07f);
-        for (int i = 0; i<10; i++)
+        for (int i = 0; i < 10; i++)
         {
             ChangeChildAlpha(0.3f);
             yield return wfs;
@@ -155,11 +166,10 @@ public class Player : MonoBehaviour
         }
 
         ChangeState(PlayerState.move);
-
         m_coroutine = null;
     }
 
-    //무적상태일 때 캐릭터의 투명도 변화
+    // 무적상태일 때 캐릭터의 투명도 변화
     void ChangeChildAlpha(float n)
     {
         Transform[] allChildren = GetComponentsInChildren<Transform>();
